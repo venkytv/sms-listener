@@ -26,11 +26,13 @@ async def sms_reply():
     logging.info(f"Received message from {from_number}")
 
     # Publish the message to NATS
-    connection = app.config['NATS_CONNECTION']
     subject = app.config['NATS_SUBJECT']
+    nc = await nats.connect(app.config['NATS_URL'])
     data = Message(from_number=from_number, body=body)
     logging.debug(f"Publishing message to NATS: {subject} {data}")
-    await connection.publish(subject, data.model_dump_json().encode('utf-8'))
+    await nc.publish(subject, data.model_dump_json().encode('utf-8'))
+    nc.flush()
+    await nc.close()
 
     # Start our TwiML response
     resp = MessagingResponse()
@@ -56,13 +58,8 @@ async def main():
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    async def error_cb(e):
-        logging.error(f"Error in NATS connection: {e}")
-
-    connection = await nats.connect(args.nats_url, error_cb=error_cb)
-
     app.config['ALLOWED_NUMBERS'] = set(args.allowed_numbers)
-    app.config['NATS_CONNECTION'] = connection
+    app.config['NATS_URL'] = args.nats_url
     app.config['NATS_SUBJECT'] = args.nats_subject
 
     app.run(host="127.0.0.1", port=args.port, debug=args.debug)
