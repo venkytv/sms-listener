@@ -31,7 +31,7 @@ async def sms_reply():
     data = Message(from_number=from_number, body=body)
     logging.debug(f"Publishing message to NATS: {subject} {data}")
     await nc.publish(subject, data.model_dump_json().encode('utf-8'))
-    nc.flush()
+    await nc.flush()
     await nc.close()
 
     # Start our TwiML response
