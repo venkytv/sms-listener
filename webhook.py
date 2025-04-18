@@ -29,6 +29,7 @@ async def sms_reply():
     connection = app.config['NATS_CONNECTION']
     subject = app.config['NATS_SUBJECT']
     data = Message(from_number=from_number, body=body)
+    logging.debug(f"Publishing message to NATS: {subject} {data}")
     await connection.publish(subject, data.model_dump_json().encode('utf-8'))
 
     # Start our TwiML response
